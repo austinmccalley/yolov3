@@ -10,14 +10,15 @@ def escape_ansi(text):
     ansi_escape = re.compile(r'(\x9B|\x1B\[)[0-?]*[ -\/]*[@-~]')
     return ansi_escape.sub('', text)
 
-# Command we want to run is 
+# Command we want to run is
 # python detect.py --source  ~/hpc-share/OR_Intertidal_ExpPatch_ImageAnalysis/ExpPatch-Pics/ExpPatchPics-Processed/{YYYY-MM-DD_Survey_XX_P}/ --weights ./runs/train/tues03083/weights/best.pt --save-txt --save-crop
 
 SRC_DIR = '/nfs/hpc/share/mccallea/OR_Intertidal_ExpPatch_ImageAnalysis/ExpPatch-Pics/ExpPatchPics-Processed/'
 IMG_DIR = '/nfs/stak/users/mccallea/hpc-share/OR_Intertidal_ExpPatch_ImageAnalysis/ExpPatch-Pics/ExpPatchPics-Processed/'
+DATASET_DIR = '/nfs/stak/users/mccallea/hpc-share/cs462/yolo/datasets/species'
 
 # Yolo format for the bounding boxes
-# All x/y/w/l values are normalized to the len/wid of the image 
+# All x/y/w/l values are normalized to the len/wid of the image
 # obj_class x y w h
 
 #STRATEGY
@@ -28,7 +29,7 @@ IMG_DIR = '/nfs/stak/users/mccallea/hpc-share/OR_Intertidal_ExpPatch_ImageAnalys
 # get all the xy coordinates for the species type from the coresponding image's xml file
 # check to see if any bounding boxes are around any of those points
 # if yes, add that bounding box to the image, if no then don't
-# end result should be: list of bounding boxes that are true positives, which we then put in the training data set 
+# end result should be: list of bounding boxes that are true positives, which we then put in the training data set
 
 # subfolders = [f.path for f in os.scandir(SRC_DIR) if f.is_dir()]
 subfolders = ['/nfs/hpc/share/mccallea/OR_Intertidal_ExpPatch_ImageAnalysis/ExpPatch-Pics/ExpPatchPics-Processed/a']
@@ -51,7 +52,9 @@ for subfolder in subfolders:
   # Split the string by newline
   out = out.split('\n')
 
-  # Look for the string which indicates where the results are saved to 
+  results_path = None
+
+  # Look for the string which indicates where the results are saved to
   # and then get the path to the results file
   for line in out:
     if 'Results saved to ' in line:
@@ -73,7 +76,7 @@ for subfolder in subfolders:
   break
 
 
-# Now we have the exp_folders array. We want to get the bounding boxes for each of the images. 
+# Now we have the exp_folders array. We want to get the bounding boxes for each of the images.
 # We can do this by iterating over the text files in the labels folder
 for idx, exp_folder in enumerate(exp_folders):
   print("Starting exp folder: " + exp_folder)
@@ -91,6 +94,7 @@ for idx, exp_folder in enumerate(exp_folders):
 
   # Get all the text files in the labels folder
   text_files = [f for f in os.listdir(labels_path) if f.endswith('.txt')]
+  print(f"Text Files: {text_files}")
 
   # For each text file in the labels folder
   for text_file in text_files:
@@ -144,6 +148,10 @@ for idx, exp_folder in enumerate(exp_folders):
 
         print(f"{image_file} {l} {t} {r} {b}")
 
+
+        # Check if the bounding box contains some point
+        containsPoint = False
+
         # Iterate over all the points to check if they are within the bounding box
         for point in points:
           pClass = point['type']
@@ -163,13 +171,19 @@ for idx, exp_folder in enumerate(exp_folders):
           # We know the point is within the boundingbox and the type is the same
           # We want to add to the training set
           print(f"{image_file} {x} {y}")
-          break
+          containsPoint = True
+
+        print(containsPoint)
+
+        # If the bounding box contains a point, then we want to add it to the training set
+        if containsPoint:
+          # We now want to add the image to the training set
+          # To do this,
+          # 1. Copy the image to the training set images folder
+          # 2. Upsert the bounding box to the training set labels folder
+
+          # Get the path to the image file
+          image_path = os.path.join(img_folders[idx], image_file)
+          print(image_path)
 
 
-        # We have  a rectangle that is the bounding box of the object
-        # We now want to find the xml file that corresponds to this image
-        # and check if the bounding box contains any of the points in the xml file
-
-
-
-  break
